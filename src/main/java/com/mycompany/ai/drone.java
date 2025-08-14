@@ -232,7 +232,7 @@ private void onShowInitial() {
     double[][] xy = getXY();
     if (xy.length < 2) {
         jLabel7.setText("Initial distance: — (need ≥ 2 cities)");
-        routePanel.setData(xy, null, null);
+        routePanel.setData(xy, initialRoute, null, safety);
         return;
     }
 
@@ -291,7 +291,7 @@ private void onRunSA() {
     jLabel8.setText(String.format("Optimized distance: %.3f", dBest));
     jLabel6.setText(String.format("optimized cost : %.3f", cBest));
 
-    routePanel.setData(xy, initialRoute, best);
+    routePanel.setData(xy, initialRoute, best, safety);
 }
 
     /**
@@ -532,11 +532,20 @@ private void onRunSA() {
 
         javax.swing.JOptionPane.showMessageDialog(this,
             "Perceptron trained on " + data.X.length + " rows.");
+
+        // 🔹 بعد التدريب: عمل تنبؤ فوري على بيانات الجدول
+        safety = predictSafetyFromTable(); 
+        if (safety != null) {
+            for (int i = 0; i < safety.length; i++) {
+                ((CityTableModel) jTable1.getModel()).setValueAt(safety[i], i, 5);
+            }
+        }
+
     } catch (Exception ex) {
         ex.printStackTrace();
         javax.swing.JOptionPane.showMessageDialog(this,
             "Training failed: " + ex.getMessage());
-    }        // TODO add your handling code here:
+    }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -548,28 +557,19 @@ private void onRunSA() {
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        // TODO add your handling code here:
+        fillRandomData(((Number) jSpinner1.getValue()).intValue(), true);
     }//GEN-LAST:event_jButton5ActionPerformed
 public static double routeCost(double[][] xy, int[] route, int[] safety) {
-    double totalCost = 0.0;
-
+     double totalCost = 0.0;
     for (int i = 0; i < route.length; i++) {
-        // Current and next city indices
         int currCity = route[i];
-        int nextCity = route[(i + 1) % route.length]; // wrap to start
-
-        // Euclidean distance
+        int nextCity = route[(i + 1) % route.length];
         double dx = xy[currCity][0] - xy[nextCity][0];
         double dy = xy[currCity][1] - xy[nextCity][1];
         double distance = Math.sqrt(dx * dx + dy * dy);
-
-        // Safety penalty (e.g., 1% extra cost per safety point)
-        double safetyPenalty = 1.0 + (safety[currCity] / 100.0);
-
-        // Add distance with penalty
-        totalCost += distance * safetyPenalty;
+        totalCost += distance;
+        if (safety[currCity] == 1) totalCost += 50; 
     }
-
     return totalCost;
 }
 
@@ -600,11 +600,14 @@ private double[][] getWeatherX() {
     return rows.toArray(new double[0][3]);
 }
 private int[] predictSafetyFromTable() {
-    if (perceptron == null || scaler == null) return null;
+   if (perceptron == null || scaler == null) return null;
     double[][] X = getWeatherX();
     double[][] Xs = scaler.transform(X);
     int[] out = new int[Xs.length];
-    for (int i=0;i<Xs.length;i++) out[i] = perceptron.predict01(Xs[i]);
+    for (int i=0; i<Xs.length; i++) {
+        out[i] = perceptron.predict01(Xs[i]);
+        ((CityTableModel) jTable1.getModel()).setValueAt(out[i], i, 5); 
+    }
     return out;
 }
     /**

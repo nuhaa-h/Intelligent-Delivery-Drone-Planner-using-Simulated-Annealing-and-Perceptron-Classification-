@@ -1,14 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.ai;
-
-/**
- *
- * @author HP
- */
-
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,43 +7,34 @@ import java.awt.geom.Ellipse2D;
 import java.util.function.BiFunction;
 
 public class RoutePanel extends JPanel {
+    private double[][] cities;
+    private int[] initialRoute;
+    private int[] optimizedRoute;
+    private int[] safety;
 
-    private double[][] cities;       // city coordinates [ [x, y], ... ]
-    private int[] initialRoute;      // route before optimization
-    private int[] optimizedRoute;    // route after optimization
-private int[] safety; // 0=safe, 1=unsafe
     public RoutePanel() {
         setPreferredSize(new Dimension(800, 600));
     }
 
-   /* public void setData(double[][] xy, int[] initR, int[] optR) {
+    public void setData(double[][] xy, int[] initR, int[] optR, int[] safety){
         this.cities = xy;
         this.initialRoute = initR;
         this.optimizedRoute = optR;
+        this.safety = safety;
         repaint();
-    }*/
-    public void setData(double[][] xy, int[] initR, int[] optR, int[] safety){
-    this.cities = xy;
-    this.initialRoute = initR;
-    this.optimizedRoute = optR;
-    this.safety = safety;
-    repaint();
-}
-// keep your old 3-arg version as a convenience:
-public void setData(double[][] xy, int[] initR, int[] optR){
-    setData(xy, initR, optR, this.safety);
-}
+    }
+    public void setData(double[][] xy, int[] initR, int[] optR){
+        setData(xy, initR, optR, this.safety);
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         if (cities == null || cities.length == 0) return;
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // ---------- Auto-scale ----------
         double minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
         for (double[] c : cities) {
             minX = Math.min(minX, c[0]);
@@ -77,7 +58,6 @@ public void setData(double[][] xy, int[] initR, int[] optR){
             return new Point2D.Double(px, py);
         };
 
-        // ---------- Draw initial route ----------
         if (initialRoute != null && initialRoute.length > 1) {
             g2.setColor(new Color(100, 100, 100));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{8f, 8f}, 0));
@@ -90,7 +70,6 @@ public void setData(double[][] xy, int[] initR, int[] optR){
             }
         }
 
-        // ---------- Draw optimized route ----------
         if (optimizedRoute != null && optimizedRoute.length > 1) {
             g2.setColor(Color.RED);
             g2.setStroke(new BasicStroke(2f));
@@ -103,19 +82,15 @@ public void setData(double[][] xy, int[] initR, int[] optR){
             }
         }
 
-        // ---------- Draw city points and labels ----------
-        g2.setColor(Color.BLUE);
-        for (int i=0;i<cities.length;i++){
-    Point2D p = map.apply(cities[i][0], cities[i][1]);
-    boolean unsafe = (safety != null && i < safety.length && safety[i]==1);
-    g2.setColor(unsafe ? new Color(200,30,30) : new Color(25,90,200));
-    g2.fill(new Ellipse2D.Double(p.getX()-5,p.getY()-5,10,10));
-    g2.setColor(Color.BLACK);
-    g2.drawString("City " + i, (float)p.getX()+8,(float)p.getY()-8);
-}
-
+        for (int i=0; i<cities.length; i++){
+            Point2D p = map.apply(cities[i][0], cities[i][1]);
+            boolean unsafe = (safety != null && i < safety.length && safety[i]==1);
+            g2.setColor(unsafe ? Color.RED : Color.GREEN);
+            g2.fill(new Ellipse2D.Double(p.getX()-5,p.getY()-5,10,10));
+            g2.setColor(Color.BLACK);
+            g2.drawString("City " + i, (float)p.getX()+8,(float)p.getY()-8);
+        }
 
         g2.dispose();
     }
 }
-
